@@ -189,7 +189,8 @@ if (!requireNamespace(&quot;GEOmetadb&quot;, quietly = TRUE))
 <div id="data-loading" class="section level2">
 <h2>Data Loading</h2>
 <p>The first step is to load in the chosen experiment, and then put it within a dataframe to further parse</p>
-<pre class="r"><code>#NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 2022
+<pre class="r"><code>#(Isserlin 2022)
+#NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 2022
 GSEID &lt;- &#39;GSE112594&#39;
 sfiles = GEOquery::getGEOSuppFiles(GSEID)
 fnames = rownames(sfiles)
@@ -201,12 +202,14 @@ cols = colnames(data)</code></pre>
 <h2>Data Cleaning</h2>
 <p>#Duplicates</p>
 <p>Next, we check if there are any possible duplicates, and take care of them. Here, no duplicates were found. There,fore no action was done.</p>
-<pre class="r"><code>#NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
+<pre class="r"><code>#(Isserlin 2022)
+#NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
 summarized_gene_counts &lt;- sort(table(data$geneName),decreasing = TRUE)
 actualGenes = unique(data$geneName)</code></pre>
 <p>#Filtering</p>
 <p>#Genes that have low counts (at least 1 read / million) must be taken out. Approx. 45 000 were filtered here.</p>
-<pre class="r"><code>#NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
+<pre class="r"><code>#(Isserlin 2022)
+#NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
 cpms = edgeR::cpm(data[,2:196])
 rownames(cpms) &lt;- data[,1]
 keep = rowSums(cpms &gt;1) &gt;=10
@@ -222,7 +225,8 @@ dim(data)</code></pre>
 <div id="pre-boxplot" class="section level3">
 <h3>Pre-BoxPlot</h3>
 <p>Plotting just the filtered data lead to a quite uniform boxplot</p>
-<pre class="r"><code>#NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
+<pre class="r"><code>#(Isserlin 2022)
+#NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
 data2plot &lt;- log2(edgeR::cpm(data_filtered[,2:196]))
 suppressWarnings(boxplot(data2plot, xlab = &quot;Samples&quot;, ylab = &quot;log2 CPM&quot;, 
         las = 2, cex = 0.5, cex.lab = 0.5,
@@ -234,7 +238,8 @@ abline(h = median(apply(data2plot, 2, median)),
 <div id="density-plot" class="section level3">
 <h3>Density Plot</h3>
 <p>As we can see, this is heavily left leaning before normalization</p>
-<pre class="r"><code>#NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
+<pre class="r"><code>#(Isserlin 2022)
+#NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
 counts_density &lt;- apply(log2(edgeR::cpm(data_filtered[,2:196])), 
                         2, density)
 
@@ -262,7 +267,8 @@ counts_density &lt;- apply(log2(edgeR::cpm(data_filtered[,2:196])),
 <div id="normalization-1" class="section level3">
 <h3>Normalization</h3>
 <p>TMM is applied to the dataset. Note that we are comparing patients who recieved the drug vs patients who have not.</p>
-<pre class="r"><code>#NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
+<pre class="r"><code>#(Isserlin 2022)
+#NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
 filtered_data_matrix &lt;- as.matrix(data_filtered[,2:196])
 rownames(filtered_data_matrix) &lt;- data_filtered$geneName
 d = edgeR::DGEList(counts=filtered_data_matrix)
@@ -271,7 +277,8 @@ normalized_counts &lt;- edgeR::cpm(d)</code></pre>
 </div>
 <div id="post-normalization-plots" class="section level3">
 <h3>Post Normalization Plots</h3>
-<pre class="r"><code>#NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
+<pre class="r"><code>#(Isserlin 2022)
+#NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
 data2plot &lt;- log2(edgeR::cpm(normalized_counts))
 suppressWarnings(boxplot(data2plot, xlab = &quot;Samples&quot;, ylab = &quot;log2 CPM&quot;, 
         las = 2, cex = 0.5, cex.lab = 0.5,
@@ -306,7 +313,8 @@ abline(h = median(apply(data2plot, 2, median)),
 <div id="final-step-of-normalization-mds-plot" class="section level3">
 <h3>Final Step of Normalization: MDS Plot</h3>
 <p>Sample difference is shown below.</p>
-<pre class="r"><code>#NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
+<pre class="r"><code>#(Isserlin 2022)
+#NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
 #edgeR::plotMDS.DGEList(d, labels=rownames(data_filtered),
 #  col = c(&quot;orange&quot;,&quot;yellow&quot;)[factor(data_filtered$geneName)])</code></pre>
 </div>
@@ -314,7 +322,8 @@ abline(h = median(apply(data2plot, 2, median)),
 <div id="mapping-to-hugo" class="section level2">
 <h2>Mapping to HUGO</h2>
 <p>Here the human ensembl genes are compared to against the HUGO gene symbols. They are compared against one other, then the HUGE symboles replace the ensembl ones.</p>
-<pre class="r"><code>#NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
+<pre class="r"><code>#(Isserlin 2022)
+#NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
 ensembl &lt;- biomaRt::useMart(&quot;ensembl&quot;, dataset = &quot;hsapiens_gene_ensembl&quot;)
 conversion_stash &lt;- &quot;data_conv.rds&quot;
 data_conv &lt;- biomaRt::getBM(attributes = c(&quot;ensembl_gene_id&quot;,&quot;hgnc_symbol&quot;),
@@ -361,6 +370,13 @@ difference</code></pre>
 <h3>What is the final coverage of your dataset?</h3>
 <p>No genes were removed or added. This leads to a final coverage of 64 253 genes.</p>
 </div>
+</div>
+<div id="references" class="section level1">
+<h1>References</h1>
+<p>Isserlin, R. (2022). Lecture 4 - Data Exploration and Normalization. Retrieved from Quercus website: <a href="https://q.utoronto.ca/courses/248455/files/19273570?module_item_id=3476594" class="uri">https://q.utoronto.ca/courses/248455/files/19273570?module_item_id=3476594</a></p>
+<p>Isserlin, R. (2022). Lecture 5 - Data Exploration and ID Mapping. Retrieved from Quercus website: <a href="https://q.utoronto.ca/courses/248455/files/18120883?module_item_id=3463354" class="uri">https://q.utoronto.ca/courses/248455/files/18120883?module_item_id=3463354</a></p>
+<p>Linsley, P. S., Greenbaum, C. J., Rosasco, M., Presnell, S., Herold, K. C., &amp; Dufort, M. J. (2019). Elevated T cell levels in peripheral blood predict poor clinical response following rituximab treatment in new-onset type 1 diabetes. Genes and Immunity, 20(4), 293–307. <a href="doi:10.1038/s41435-018-0032-1" class="uri">doi:10.1038/s41435-018-0032-1</a></p>
+<p>Linsley PS, Greenbaum CJ, Rosasco MG, Presnell SR, Herold KC, Dufort MJ. (2018, May 12). Elevated T cell levels in peripheral blood predict poor clinical response following rituximab treatment in new-onset type 1 diabetes. Retrieved from Nih.gov website: <a href="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi" class="uri">https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi</a></p>
 </div>
 
 

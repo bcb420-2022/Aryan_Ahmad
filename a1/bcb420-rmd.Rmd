@@ -28,6 +28,7 @@ The first step is to load in the chosen experiment, and then put it within a
 dataframe to further parse
 
 ```{r}
+#(Isserlin 2022)
 #NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 2022
 GSEID <- 'GSE112594'
 sfiles = GEOquery::getGEOSuppFiles(GSEID)
@@ -44,6 +45,7 @@ cols = colnames(data)
 Next, we check if there are any possible duplicates, and take care of them. Here, no duplicates were found. There,fore no action was done.
 
 ```{r}
+#(Isserlin 2022)
 #NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
 summarized_gene_counts <- sort(table(data$geneName),decreasing = TRUE)
 actualGenes = unique(data$geneName)
@@ -54,6 +56,7 @@ actualGenes = unique(data$geneName)
 #Genes that have low counts (at least 1 read / million) must be taken out. Approx. 45 000 were filtered here. 
 
 ```{r}
+#(Isserlin 2022)
 #NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
 cpms = edgeR::cpm(data[,2:196])
 rownames(cpms) <- data[,1]
@@ -71,6 +74,7 @@ First, we check how the dataset looks before we do any normalization. This is do
 
 Plotting just the filtered data lead to a quite uniform boxplot
 ```{r}
+#(Isserlin 2022)
 #NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
 data2plot <- log2(edgeR::cpm(data_filtered[,2:196]))
 suppressWarnings(boxplot(data2plot, xlab = "Samples", ylab = "log2 CPM", 
@@ -84,6 +88,7 @@ abline(h = median(apply(data2plot, 2, median)),
 
 As we can see, this is heavily left leaning before normalization
 ```{r}
+#(Isserlin 2022)
 #NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
 counts_density <- apply(log2(edgeR::cpm(data_filtered[,2:196])), 
                         2, density)
@@ -115,6 +120,7 @@ counts_density <- apply(log2(edgeR::cpm(data_filtered[,2:196])),
 TMM is applied to the dataset. Note that we are comparing patients who recieved the drug vs patients who have not. 
 
 ```{r}
+#(Isserlin 2022)
 #NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
 filtered_data_matrix <- as.matrix(data_filtered[,2:196])
 rownames(filtered_data_matrix) <- data_filtered$geneName
@@ -127,6 +133,7 @@ normalized_counts <- edgeR::cpm(d)
 ### Post Normalization Plots
 
 ```{r}
+#(Isserlin 2022)
 #NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
 data2plot <- log2(edgeR::cpm(normalized_counts))
 suppressWarnings(boxplot(data2plot, xlab = "Samples", ylab = "log2 CPM", 
@@ -165,6 +172,7 @@ counts_density <- apply(log2(edgeR::cpm(normalized_counts)),
 Sample difference is shown below. 
 
 ```{r}
+#(Isserlin 2022)
 #NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
 #edgeR::plotMDS.DGEList(d, labels=rownames(data_filtered),
 #  col = c("orange","yellow")[factor(data_filtered$geneName)])
@@ -175,6 +183,8 @@ Sample difference is shown below.
 Here the human ensembl genes are compared to against the HUGO gene symbols. They are compared against one other, then the HUGE symboles replace the ensembl ones.
 
 ```{r}
+
+#(Isserlin 2022)
 #NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
 ensembl <- biomaRt::useMart("ensembl", dataset = "hsapiens_gene_ensembl")
 conversion_stash <- "data_conv.rds"
@@ -227,3 +237,13 @@ There were no duplicates, as we can see in the "filtering category.
 
 No genes were removed or added. This leads to a final coverage of 64 253 genes.
 
+
+# References
+
+Isserlin, R. (2022). Lecture 4 - Data Exploration and Normalization. Retrieved from Quercus website: https://q.utoronto.ca/courses/248455/files/19273570?module_item_id=3476594
+
+Isserlin, R. (2022). Lecture 5 - Data Exploration and ID Mapping. Retrieved from Quercus website: https://q.utoronto.ca/courses/248455/files/18120883?module_item_id=3463354
+
+Linsley, P. S., Greenbaum, C. J., Rosasco, M., Presnell, S., Herold, K. C., & Dufort, M. J. (2019). Elevated T cell levels in peripheral blood predict poor clinical response following rituximab treatment in new-onset type 1 diabetes. Genes and Immunity, 20(4), 293–307. doi:10.1038/s41435-018-0032-1
+
+Linsley PS, Greenbaum CJ, Rosasco MG, Presnell SR, Herold KC, Dufort MJ. (2018, May 12). Elevated T cell levels in peripheral blood predict poor clinical response following rituximab treatment in new-onset type 1 diabetes. Retrieved from Nih.gov website: https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi
