@@ -1,0 +1,229 @@
+---
+title: "BCB420 Assignment 1"
+author: "Aryan Ahmad"
+output: html_document
+---
+
+
+## Setup
+
+NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 2022
+```{r}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+if (! requireNamespace("biomaRt", quietly = TRUE)) {
+  BiocManager::install("bioMaRt")
+}
+if (!requireNamespace("GEOmetadb", quietly = TRUE))
+  BiocManager::install("GEOmetadb")
+if (! requireNamespace("edgeR", quietly = TRUE)) {
+  BiocManager::install("edgeR")
+}
+
+```
+
+## Data Loading
+
+The first step is to load in the chosen experiment, and then put it within a 
+dataframe to further parse
+
+```{r}
+#NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 2022
+GSEID <- 'GSE112594'
+sfiles = GEOquery::getGEOSuppFiles(GSEID)
+fnames = rownames(sfiles)
+data = read.delim(fnames[1],header=TRUE,
+                       check.names = FALSE)
+cols = colnames(data)
+```
+
+## Data Cleaning
+
+#Duplicates
+
+Next, we check if there are any possible duplicates, and take care of them. Here, no duplicates were found. There,fore no action was done.
+
+```{r}
+#NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
+summarized_gene_counts <- sort(table(data$geneName),decreasing = TRUE)
+actualGenes = unique(data$geneName)
+```
+
+#Filtering
+
+#Genes that have low counts (at least 1 read / million) must be taken out. Approx. 45 000 were filtered here. 
+
+```{r}
+#NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
+cpms = edgeR::cpm(data[,2:196])
+rownames(cpms) <- data[,1]
+keep = rowSums(cpms >1) >=10
+data_filtered = data[keep,]
+dim(data)
+dim(data_filtered)
+```
+
+## Normalization
+
+First, we check how the dataset looks before we do any normalization. This is done with a pre density and a pre boxplot, seen in the next 2 snippets.
+
+### Pre-BoxPlot
+
+Plotting just the filtered data lead to a quite uniform boxplot
+```{r}
+#NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
+data2plot <- log2(edgeR::cpm(data_filtered[,2:196]))
+suppressWarnings(boxplot(data2plot, xlab = "Samples", ylab = "log2 CPM", 
+        las = 2, cex = 0.5, cex.lab = 0.5,
+        cex.axis = 0.5, main = "T Cell count Follwing Rituximab treatment"))
+abline(h = median(apply(data2plot, 2, median)), 
+       col = "green", lwd = 0.6, lty = "dashed")
+```
+
+### Density Plot
+
+As we can see, this is heavily left leaning before normalization
+```{r}
+#NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
+counts_density <- apply(log2(edgeR::cpm(data_filtered[,2:196])), 
+                        2, density)
+
+    xlim <- 0; ylim <- 0
+    for (i in 1:length(counts_density)) {
+      xlim <- range(c(xlim, counts_density[[i]]$x)); 
+      ylim <- range(c(ylim, counts_density[[i]]$y))
+    }
+    cols <- rainbow(length(counts_density))
+    ltys <- rep(1, length(counts_density))
+
+    plot(counts_density[[1]], xlim=xlim, ylim=ylim, type="n", 
+         ylab="Smoothing density of log2-CPM", 
+         main="", cex.lab = 0.85)
+
+    for (i in 1:length(counts_density)) 
+      lines(counts_density[[i]], col=cols[i], lty=ltys[i])
+
+    legend("topright", colnames(data2plot),  
+           col=cols, lty=ltys, cex=0.75, 
+           border ="blue",  text.col = "green4", 
+           merge = TRUE, bg = "gray90")
+```
+
+
+### Normalization
+
+TMM is applied to the dataset. Note that we are comparing patients who recieved the drug vs patients who have not. 
+
+```{r}
+#NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
+filtered_data_matrix <- as.matrix(data_filtered[,2:196])
+rownames(filtered_data_matrix) <- data_filtered$geneName
+d = edgeR::DGEList(counts=filtered_data_matrix)
+d = edgeR::calcNormFactors(d)
+normalized_counts <- edgeR::cpm(d)
+
+```
+
+### Post Normalization Plots
+
+```{r}
+#NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
+data2plot <- log2(edgeR::cpm(normalized_counts))
+suppressWarnings(boxplot(data2plot, xlab = "Samples", ylab = "log2 CPM", 
+        las = 2, cex = 0.5, cex.lab = 0.5,
+        cex.axis = 0.5, main = "T Cell count Follwing Rituximab treatment"))
+abline(h = median(apply(data2plot, 2, median)), 
+       col = "green", lwd = 0.6, lty = "dashed")
+
+counts_density <- apply(log2(edgeR::cpm(normalized_counts)), 
+                        2, density)
+
+    xlim <- 0; ylim <- 0
+    for (i in 1:length(counts_density)) {
+      xlim <- range(c(xlim, counts_density[[i]]$x)); 
+      ylim <- range(c(ylim, counts_density[[i]]$y))
+    }
+    cols <- rainbow(length(counts_density))
+    ltys <- rep(1, length(counts_density))
+
+    plot(counts_density[[1]], xlim=xlim, ylim=ylim, type="n", 
+         ylab="Smoothing density of log2-CPM", 
+         main="", cex.lab = 0.85)
+
+    for (i in 1:length(counts_density)) 
+      lines(counts_density[[i]], col=cols[i], lty=ltys[i])
+
+    legend("topright", colnames(data2plot),  
+           col=cols, lty=ltys, cex=0.75, 
+           border ="blue",  text.col = "green4", 
+           merge = TRUE, bg = "gray90")
+```
+
+
+### Final Step of Normalization: MDS Plot
+
+Sample difference is shown below. 
+
+```{r}
+#NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
+#edgeR::plotMDS.DGEList(d, labels=rownames(data_filtered),
+#  col = c("orange","yellow")[factor(data_filtered$geneName)])
+```
+
+## Mapping to HUGO
+
+Here the human ensembl genes are compared to against the HUGO gene symbols. They are compared against one other, then the HUGE symboles replace the ensembl ones.
+
+```{r}
+#NOTE: Modified snippet from Lecture 4 and 5 of BCB420 Winter 202
+ensembl <- biomaRt::useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+conversion_stash <- "data_conv.rds"
+data_conv <- biomaRt::getBM(attributes = c("ensembl_gene_id","hgnc_symbol"),
+                            filters = c("ensembl_gene_id"),
+                            values = data$geneName,
+                            mart = ensembl)
+difference <- nrow(data) - nrow(data_conv)
+difference
+
+
+#The commented code below seems to crash my computer
+
+#data_annot <- merge(data_conv, data)
+
+#difference_annot <- nrow(data_annot) - nrow(data)
+#difference_annot
+
+```
+
+
+## Discussion
+
+
+### What are the control and test conditions of the dataset?
+
+The control group is the group that did not recieve rituximab, while the test group did. 
+
+### Why is the dataset of interest to you?
+
+A family member suffers from T1D, which is why the overall topic chosen was related to this. This medicine, rituximab, has recently been in the news as a potential cancer treatment for a type of lymphoma. 
+
+### Were there expression values that were not unique for specific genes? How did you handle these?
+
+No, all expression values ended up mapping properly. Initially, I was unsure if this would be able to properly map, so I ended up doing a quick manual check as well as comparing line by line if anything was needed.
+
+### Were there expression values that could not be mapped to current HUGO symbols?
+
+Yes, the number of expression values were 4363 genes. 
+
+### How many outliers were removed?
+
+No outliers needed to be removed.
+
+### How did you handle replicates?
+
+There were no duplicates, as we can see in the "filtering category. 
+
+### What is the final coverage of your dataset?
+
+No genes were removed or added. This leads to a final coverage of 64 253 genes.
+
