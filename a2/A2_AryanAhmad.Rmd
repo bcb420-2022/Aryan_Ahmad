@@ -1,0 +1,282 @@
+---
+title: "BCB420 A2 - Aryan Ahmad"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+if (! requireNamespace("biomaRt", quietly = TRUE)) {
+  BiocManager::install("bioMaRt")
+}
+if (!requireNamespace("GEOmetadb", quietly = TRUE))
+  BiocManager::install("GEOmetadb")
+if (! requireNamespace("edgeR", quietly = TRUE)) {
+  BiocManager::install("edgeR")
+}
+if (! requireNamespace("ComplexHeatmap", quietly = TRUE)) {
+  BiocManager::install("ComplexHeatmap")
+}
+if (! requireNamespace("circlize", quietly = TRUE)) {
+  BiocManager::install("circlize")
+}
+
+library(BiocManager)
+```
+
+## Introduction
+
+TODO: Introduction
+
+## Loading Data
+
+Within Assignment 1, the write.csv() function allows us to export a csv file which will be the basis of the data from assignment 1, that we will analyze in this assignment. The function read.csv() allows us to read this file type and convert it for use
+
+```{r}
+#Code was based on lecture 6 content. (Isserlin 2022)
+
+#TODO: Have proper formatting on this assignment:
+# table of contents
+# Legend and titles and axes
+# Explanation per thing
+# name and title
+# Introduction
+# Headers
+#Proper legends
+#Wiki
+#Proper knitting @ location
+# References (including packages & stack overflow link
+
+#after that make it pretty
+
+library(knitr)
+data <- read.csv("normalized.csv", sep=",", row.names=1, stringsAsFactors = FALSE)
+
+# https://stackoverflow.com/questions/16030728/how-to-name-the-unnamed-first-column-of-a-data-frame
+#data <- cbind(rownames(data),data)
+#rownames(data) <- NULL
+#colnames(data) <- c(names(data))
+#colnames(data)[1] <- "ensembl_gene_id"
+kable(data[1:5,], type="html")
+```
+
+## Getting P-Values
+
+### Creating a Data Matrix
+
+```{r}
+#Code was based on lecture 6 content. (Isserlin 2022)
+samples <- data.frame(colSums(data[,-1]))
+model_design <- model.matrix(~ samples$colSums.data....1.. )
+
+
+expressionMatrix <- as.matrix(data[1:194])
+x = ncol(expressionMatrix)
+
+minimalSet <- Biobase::ExpressionSet(assayData=expressionMatrix)
+fit <- limma::lmFit(minimalSet, model_design)
+```
+
+
+### Compute
+```{r}
+#Code was based on lecture 6 content. (Isserlin 2022)
+fit2 <- limma::eBayes(fit,trend=TRUE)
+topfit <- limma::topTable(fit2, 
+                   coef=ncol(model_design),
+                   number = nrow(expressionMatrix))
+data <- cbind(rownames(data),data)
+rownames(data) <- NULL
+colnames(data) <- c(names(data))
+colnames(data)[1] <- "ensembl_gene_id"
+heatmap_matrix <- data[1:250,1:ncol(data)]
+heatmap_matrix
+output_hits <- merge(data[,1:2],
+                     topfit,
+                     by.y=0,by.x=1,
+                     all.y=TRUE)
+output_hits <- output_hits[order(output_hits$P.Value),]
+output_hits <- output_hits[-2]
+kable(output_hits[1:10,],type="html",row.names = FALSE)
+
+```
+
+
+### Getting the P - Values
+
+```{r}
+length(which(output_hits$P.Value < 0.05))
+length(which(output_hits$adj.P.Val < 0.05))
+```
+
+## Correcting the P-Values
+
+```{r}
+#Code was based on lecture 6 content. (Isserlin 2022)
+model_design_pat <- model.matrix(
+  ~ samples$colSums.data....1..)
+kable(model_design_pat[1:5,1:2],type="html")
+fit_pat <- limma::lmFit(minimalSet, model_design_pat)
+
+fit2_pat <- limma::eBayes(fit_pat,trend=TRUE)
+topfit_pat <- limma::topTable(fit2_pat, 
+                   coef=ncol(model_design_pat),
+                   adjust.method = "BH",
+                   number = nrow(expressionMatrix))
+
+
+output_hits_pat <- merge(data[,1:2],
+                         topfit_pat,by.y=0,by.x=1,all.y=TRUE)
+output_hits_pat <- output_hits_pat[order(output_hits_pat$P.Value),]
+output_hits_pat[,-2]
+kable(output_hits_pat[1:10,],type="html",row.names = FALSE)
+
+length(which(output_hits_pat$P.Value < 0.05))
+length(which(output_hits_pat$adj.P.Val < 0.05))
+
+
+
+#Down and Upstream Genes
+
+downstream = output_hits_pat$ensembl_gene_id[which(output_hits_pat$logFC < 0)]
+upstream = output_hits_pat$ensembl_gene_id[which(output_hits_pat$logFC > 0)]
+
+#This only needs to be done once, which is why it is commented out
+
+#write.csv(downstream, file = "downstreamGenes.csv")
+#write.csv(upstream, file = "upstreamGenes.csv")
+```
+
+
+## Comparisons
+
+```{r}
+
+#Code was based on lecture 6 content. (Isserlin 2022)
+#Volcano plot is logFC vs -log10(pvalue)
+
+#Get data
+
+logfc_df = output_hits_pat[c("ensembl_gene_id","logFC")]
+log10_df = output_hits_pat[c("ensembl_gene_id", "adj.P.Val")]
+log10_df$adj.P.Val = -log10(log10_df$adj.P.Val)
+final_data <- merge(logfc_df, log10_df, by.x=1,by.y=1)
+
+#Change Colour
+final_data$colour <-"black"
+final_data$colour[which(final_data$logFC < 0)] <- "orange"
+final_data$colour[which(final_data$logFC > 0)] <- "blue"
+
+#Plot
+
+plot(final_data$logFC, final_data$adj.P.Val, col=final_data$colour, xlab = "logFC Value", ylab = "-log10 of p-Value", main="Volcano Plot of Differentially Expressed Genes", xlim = c(0,0.003))
+
+#Limited x to get rid of oultiers
+
+```
+
+FIGURE DESCRIPTION ETC ETC
+
+### Heatmap
+
+```{r}
+#Code was based on lecture 6 content. (Isserlin 2022)
+library(ComplexHeatmap)
+library(circlize)
+ht_opt$message = FALSE
+suppressPackageStartupMessages(library(ComplexHeatmap))
+
+
+heatmap_matrix <- data[1:250,1:ncol(data)]
+rownames(heatmap_matrix) <- unique(data[1:250,1:ncol(data)]$ensembl_gene_id)
+colnames(heatmap_matrix) <- colnames(data[1:250,
+                        1:ncol(data)])
+heatmap_matrix <- heatmap_matrix[,-1]
+
+
+heatmap_matrix <- t(scale(t(heatmap_matrix)))
+if(min(heatmap_matrix) == 0){
+    heatmap_col = colorRamp2(c( 0, max(heatmap_matrix)), 
+                      c( "white", "red"))
+  } else {
+    heatmap_col = colorRamp2(c(min(heatmap_matrix), 0,
+        max(heatmap_matrix)), c("blue", "white", "red"))
+  }
+current_heatmap <- Heatmap(as.matrix(heatmap_matrix),
+      show_row_dend = TRUE,show_column_dend = TRUE, 
+      col=heatmap_col,show_column_names = TRUE, 
+      show_row_names = FALSE,show_heatmap_legend = TRUE)
+
+
+
+top_hits <- output_hits_pat$ensembl_gene_id[
+  output_hits_pat$P.Value<0.05]
+heatmap_matrix_tophits <- t(
+  scale(t(heatmap_matrix[
+    which(rownames(heatmap_matrix) %in% top_hits),])))
+if(min(heatmap_matrix_tophits) == 0){
+    heatmap_col = colorRamp2(c( 0, max(heatmap_matrix_tophits)), 
+                             c( "white", "red"))
+  } else {
+    heatmap_col = colorRamp2(c(min(heatmap_matrix_tophits), 0,
+      max(heatmap_matrix_tophits)), c("blue", "white", "red"))
+  }
+current_heatmap2 <- Heatmap(as.matrix(heatmap_matrix_tophits),
+                           cluster_rows = TRUE,
+                           cluster_columns = TRUE,
+                               show_row_dend = TRUE,
+                               show_column_dend = TRUE, 
+                               col=heatmap_col,
+                               show_column_names = TRUE, 
+                               show_row_names = FALSE,
+                               show_heatmap_legend = TRUE,
+                               )
+current_heatmap2
+```
+
+
+
+## Threshold over-representation analysis
+
+### Which method did you choose and why?
+
+I chose g:profiler, due to the ease of use and how familiar I was with the homework assignment
+
+### What annotation data did you use and why? What version of the annotation are you using?
+
+I used GO biological process, Reactome, and WikiPathways. This is because these were the ones used in the homework assignment, and it showed similarity with the types of genes that were being used. 
+
+### How many genesets were returned with what thresholds?
+
+794 (GO:BP) + 43(Reactome) + 57 (WP) = 2632 genesets were returned. All thresholds were left at default, how the significance threshold chosen was Benjamini-Hochberg. 
+
+TODO: Include photo
+
+### Run the analysis using the up-regulated set of genes, and the down-regulated set of genes separately. How do these results compare to using the whole list (i.e all differentially expressed genes together vs. the up-regulated and down regulated differentially expressed genes separately)?
+
+Down regulated: 320 (GO:BP) + 70 (REAC) + 17 (WP) = 407
+
+Up regulated: 1277 (GO BP) + 161 (REAC) + 112 (WP) = 1550
+
+TODO: Include Photo
+
+## Interpretation
+
+### Do the over-representation results support conclusions or mechanisms discussed in the original paper?
+
+TODO Do this Properly
+
+Yes, they do. This is because the paper talks about how the majority of RNA sequences collected for the population was used for downstream analyses. A simple result, like the higher amount/more "hits" of the downregulated supports this. Also, one of the highest hits is related to neuron projection - and in the text there is much evidence about high response of this drug to neuronal antigens 
+
+TODO: include photo
+
+### Can you find evidence, i.e. publications, to support some of the results that you see. How does this evidence support your results.
+
+#TODO Do this properly
+Yes, several studies show the positive effect of the drug in question, Rituximab and its effect on neurological and brain diseases. One study (CITE), talked about how this drug is a safe treatment for certain people with autoimmune disorders, such as autoimmune encephalitis. 
+https://nn.neurology.org/content/8/6/e1088
+
+
+#TODO References
+
+#TODO Link to journal
