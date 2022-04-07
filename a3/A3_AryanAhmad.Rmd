@@ -19,9 +19,9 @@ library(dplyr)
 
 ## Introduction
 
-Ritumaxib is a drug that is currently used for automimmunue disorders, although recently there has been testing done to see if it was possible that it could help with insulin stabilization with type 1 diabetic patients. The raw data was given, and with that we are able to provide initial normalization and processing, as well as do threshold over-representation analysis - which would be the main building blocks of this assignment, where our goal is to find pathways and create a network analysis. The results from previous assignments all build up off of one another, where the normalization in assignment 1 effected the threshold results in assignment 2, which of course can be used here
+Ritumaxib is a drug that is currently used for automimmunue disorders, although recently there has been testing done to see if it was possible that it could help with insulin stabilization with type 1 diabetic patients (GSE112594). The raw data was given, and with that we are able to provide initial normalization and processing, as well as do threshold over-representation analysis - which would be the main building blocks of this assignment, where our goal is to find pathways and create a network analysis. The results from previous assignments all build up off of one another, where the normalization in assignment 1 effected the threshold results in assignment 2, which of course can be used here
 
-It is important to note that this original data did not have clear contorl/case groups outlined, so extra preprocessing needed to be done. Therefore, the initial results from assignment 1 and 2 would not be able to be properly used - the data had to be properly made with a control/case, run through assignment 1 and 2 code, before finally being able to use it here. More specifics are noted within the wiki
+It is important to note that this original data did not have clear control/case groups outlined, so extra preprocessing needed to be done. Therefore, the initial results from assignment 1 and 2 would not be able to be properly used - the data had to be properly made with a control/case, run through assignment 1 and 2 code, before finally being able to use it here. More specifics are noted within the wiki. Therefore, specific results from the respective assignments are not shown. 
 
 
 ## Non-Threshold Gene set Enrichment Analysis
